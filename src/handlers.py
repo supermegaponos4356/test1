@@ -1,13 +1,27 @@
 from aiogram import Router, F
 from aiogram.filters import CommandStart, Command
-from aiogram.types import Message, CallbackQuery
+from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.fsm.context import FSMContext
-
-from src.states import RegistrationStates
-from src.keyboards import get_confirm_keyboard
-from src.db import users_data
+from aiogram.fsm.state import State, StatesGroup
 
 router = Router()
+
+users_data = {}
+
+class RegistrationStates(StatesGroup):
+    name = State()
+    age = State()
+    confirm = State()
+
+def get_confirm_keyboard() -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(text="Подтвердить", callback_data="confirm_reg"),
+                InlineKeyboardButton(text="Начать заново", callback_data="restart_reg")
+            ]
+        ]
+    )
 
 @router.message(CommandStart())
 async def cmd_start(message: Message):
@@ -27,23 +41,23 @@ async def cmd_help(message: Message):
 @router.message(Command("register"))
 async def cmd_register(message: Message, state: FSMContext):
     await state.set_state(RegistrationStates.name)
-    await message.answer(" Введите ваше имя.")
+    await message.answer("Введите ваше имя")
 
 @router.message(RegistrationStates.name)
 async def process_name(message: Message, state: FSMContext):
     await state.update_data(name=message.text)
     await state.set_state(RegistrationStates.age)
-    await message.answer(" Введите ваш возраст.")
+    await message.answer("Введите ваш возраст")
 
 @router.message(RegistrationStates.age)
 async def process_age(message: Message, state: FSMContext):
     if not message.text.isdigit():
-        await message.answer(" введите возраст цифрами:")
+        await message.answer("введите возраст цифрами")
         return
 
     age = int(message.text)
     if age <= 0:
-        await message.answer("Возраст не может быть равен 0 Введите возраст больше нуля:")
+        await message.answer("Введите возраст больше нуля")
         return
 
     await state.update_data(age=age)
@@ -59,14 +73,14 @@ async def process_age(message: Message, state: FSMContext):
 async def process_confirm(callback: CallbackQuery, state: FSMContext):
     data = await state.get_data()
     users_data[callback.from_user.id] = data
-    await callback.message.answer("Регистрация завершена")
+    await callback.message.answer("Регистрация завершена!")
     await state.clear()
     await callback.answer()
 
 @router.callback_query(RegistrationStates.confirm, F.data == "restart_reg")
 async def process_restart(callback: CallbackQuery, state: FSMContext):
     await state.set_state(RegistrationStates.name)
-    await callback.message.answer(" Введите ваше имя")
+    await callback.message.answer("Введите ваше имя.")
     await callback.answer()
 
 @router.message(Command("profile"))
