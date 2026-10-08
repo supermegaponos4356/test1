@@ -6,7 +6,7 @@ from src.handlers import router
 
 
 
-BOT_TOKEN  = "8962190292:AAEz4_06wiXub1T2mkYSJbVj37L4Yj7C0_k"
+
 
 
 
